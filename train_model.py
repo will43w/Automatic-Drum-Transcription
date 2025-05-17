@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import torch.optim as optim
 from model import DrumTranscriptionModel
-from .dataset import DrumTranscriptionDataset
+from dataset import DrumTranscriptionDataset
 
 # === CONFIG ===
 BATCH_SIZE = 8

@@ -4,6 +4,10 @@ import numpy as np
 import pretty_midi
 import librosa
 import tqdm
+import glob
+
+from audio_effect_chains import apply_audio_effects
+from save_audio_as_mp3 import save_audio_as_mp3
 
 if not hasattr(np, 'complex'):
     np.complex = complex
@@ -16,10 +20,20 @@ N_MELS = 128
 AUDIO_DURATION = 10
 N_SAMPLES = 1000
 
+SOUNDFONTS = glob.glob("./data_generation/soundfonts/*.sf2")
+print(SOUNDFONTS)
+
 MIDI_PITCH_TO_OUTPUT_CLASS = {
     36: 0, # Kick
     38: 1, # Snare
     42: 2, # Closed Hi Hat
+    44: 3, # Pedal Hi-hat
+    46: 4, # Open Hi Hat
+    49: 5, # Crash
+    57: 5,
+    51: 6, # Ride
+    59: 6, 
+    53: 7, # Ride Bell
 }
 NUM_CLASSES = len(MIDI_PITCH_TO_OUTPUT_CLASS)
 
@@ -41,12 +55,14 @@ def select_random_midi_program(family: str) -> int:
     return random.choice(NON_DRUM_MIDI_INSTRUMENTS[family])
 
 def generate_random_drum_track(duration: float) -> pretty_midi.Instrument:
+    tempo = 40 + random.random() * (240 - 40) # Anywhere from 40 BPM to 240 BPM
     drum = pretty_midi.Instrument(program=0, is_drum=True)
-    for t in np.arange(0, duration, 0.416667):
+    for t in np.arange(0, duration, tempo / 60 / (3 * 4 * 5)): # Divide each beat up to sixteenth notes in 3, 4, and 5
         for pitch in MIDI_PITCH_TO_OUTPUT_CLASS.keys():
-            if random.random() < 0.2:
+            random_roll = random.random()
+            if random_roll < 0.05:
                 drum.notes.append(pretty_midi.Note(
-                    velocity = random.randint(80, 120),
+                    velocity = random.randint(20, 127),
                     pitch=pitch,
                     start=t,
                     end=t + 0.05
@@ -61,7 +77,8 @@ def generate_random_melodic_track(duration: float, family: str) -> pretty_midi.I
     t = 0.0
     while t < duration:
         pitch = random.randint(*NON_DRUM_PITCH_RANGE)
-        velocity = random.randint(60, 127)
+        #velocity = random.randint(20, 127)
+        velocity = 0
         end = min(t + note_duration, duration)
         instrument.notes.append(pretty_midi.Note(
             velocity=velocity,
@@ -81,8 +98,8 @@ def generate_full_band_midi(duration: float = AUDIO_DURATION) -> pretty_midi.Pre
         pm.instruments.append(generate_random_melodic_track(duration, family))
     return pm
 
-def synthesize_midi(pm: pretty_midi.PrettyMIDI) -> np.ndarray:
-    return pm.fluidsynth(fs=SAMPLE_RATE)
+def synthesize_midi(pm: pretty_midi.PrettyMIDI, sf2_path: str = None) -> np.ndarray:
+    return pm.fluidsynth(fs=SAMPLE_RATE, sf2_path=sf2_path)
 
 def extract_log_mel(audio: np.ndarray):
     mel = librosa.feature.melspectrogram(y=audio, sr=SAMPLE_RATE, n_mels=N_MELS, hop_length=HOP_LENGTH)
@@ -102,9 +119,15 @@ def midi_to_labels(pm: pretty_midi.PrettyMIDI, n_frames: int) -> np.ndarray:
 
 # === GENERATE DATASET ===
 if __name__ == "__main__":
-    for _ in tqdm.tqdm(range(N_SAMPLES), desc="Generating dataset"):
+    for i in tqdm.tqdm(range(N_SAMPLES), desc="Generating dataset"):
         pm = generate_full_band_midi()
-        audio = synthesize_midi(pm)
+
+        sf2 = random.choice(SOUNDFONTS)
+        audio = synthesize_midi(pm, sf2) # audio = synthesize_midi(pm, sf2)
+        save_audio_as_mp3(audio, SAMPLE_RATE, output_path=f"./audio_samples/without_effects_{i}_{sf2}.mp3")
+        audio, chain_name = apply_audio_effects(audio, SAMPLE_RATE, mode="mixed")
+        save_audio_as_mp3(audio, SAMPLE_RATE, output_path=f"./audio_samples/with_effects_{chain_name}_{i}_{sf2}.mp3")
+
         mel = extract_log_mel(audio)
         n_frames = mel.shape[0]
         labels = midi_to_labels(pm, n_frames)

@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import Dataset
 
 class DrumTranscriptionDataset(Dataset):
-    def __init__(self, mel_path="input_mels.npy", label_path="output_labels.npy"):
+    def __init__(self, mel_path="./data/input_mels.npy", label_path="./data/output_labels.npy"):
         self.mels = np.load(mel_path)
         self.labels = np.load(label_path)
 
