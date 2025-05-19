@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-class DrumTranscriptionModel(nn.Module):
-    def __init__(self, n_mels=128, num_classes=3):
+class AudioToMidiModel(nn.Module):
+    def __init__(self, n_mels=128, num_classes=10):
         super().__init__()
         self.cnn = nn.Sequential(
             nn.Conv1d(n_mels, 64, kernel_size=3, padding=1),

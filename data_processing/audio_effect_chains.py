@@ -56,6 +56,7 @@ def apply_audio_effects(audio: np.ndarray, sample_rate: int = SAMPLE_RATE, mode=
     Returns:
         np.ndarray: Processed audio
     """
+    
     chain_name = ""
 
     if mode == "fixed":

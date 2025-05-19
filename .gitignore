@@ -1,6 +1,11 @@
 /venv
 /__pycache__
+
 /data/*
-/data_generation/__pycache__
-/data_generation/soundfonts/*
+
+/data_processing/__pycache__
+/data_processing/soundfonts/*
+
 /audio_samples
+
+/model/*
