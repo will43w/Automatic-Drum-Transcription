@@ -40,7 +40,7 @@ class ModelEvaluator:
     
     def evaluate(self, model_path: str = DEFAULT_MODEL_PATH):
         self.model.load_state_dict(torch.load(model_path, map_location=DEVICE))
-        loss, accuracy = self._evaluate(self.model, self.dataloader, DEVICE)
+        loss, accuracy = self._evaluate()
         print(f"Validation Loss: {loss:.4f}, Accuracy: {accuracy:.4f}")
     
 if __name__ == "__main__":
