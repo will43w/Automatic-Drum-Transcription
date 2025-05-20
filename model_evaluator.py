@@ -11,12 +11,12 @@ from constants import DEFAULT_MODEL_PATH, DEVICE
 class ModelEvaluator:
     BATCH_SIZE = 16
 
-    def __init__(self):
+    def __init__(self, dataset: AudioMidiDataset):
         self.model = AudioToMidiModel().to(DEVICE)
-        self.dataset = AudioMidiDataset.get_evaluation_dataset()
-        self.dataloader = DataLoader(self.dataset, batch_size=ModelEvaluator.BATCH_SIZE, shuffle=False)
+        self.dataloader = DataLoader(dataset, batch_size=ModelEvaluator.BATCH_SIZE, shuffle=False)
 
     def _evaluate(self) -> Tuple[float, float]:
+        loss_function = torch.nn.BCEWithLogitsLoss()
         self.model.eval()
         total_loss = 0.0
         correct = 0
@@ -26,11 +26,11 @@ class ModelEvaluator:
             for X, Y in self.dataloader:
                 X, Y = X.to(DEVICE), Y.to(DEVICE)
                 output = self.model(X)
-                loss = F.binary_cross_entropy_with_logits(output, Y)
+                loss = loss_function(output, Y)
                 total_loss += loss.item()
 
                 # Threshold for binary accuracy
-                pred = (torch.sigmoid(output) > 0.5).float()
+                pred = AudioToMidiModel.logits_to_predictions(output)
                 correct += (pred == Y).float().sum().item()
                 total += Y.numel()
 
@@ -43,6 +43,12 @@ class ModelEvaluator:
         loss, accuracy = self._evaluate()
         print(f"Validation Loss: {loss:.4f}, Accuracy: {accuracy:.4f}")
     
+def main():
+    dataset = AudioMidiDataset.get_evaluation_dataset()
+    evaluator = ModelEvaluator(dataset)
+    evaluator.evaluate()
+
 if __name__ == "__main__":
-    evaluator = ModelEvaluator()
+    dataset = AudioMidiDataset(mel_path="./data/single_sample/input_mels.npy", label_path="./data/single_sample/output_labels.npy")
+    evaluator = ModelEvaluator(dataset)
     evaluator.evaluate()

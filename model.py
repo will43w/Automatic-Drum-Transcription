@@ -22,4 +22,10 @@ class AudioToMidiModel(nn.Module):
         # Back to (B, T, F)
         x = x.transpose(1, 2)
         x, _ = self.gru(x)
-        return torch.sigmoid(self.out(x))
+        x = self.out(x)
+        return x
+    
+    def logits_to_predictions(logits: torch.Tensor) -> torch.Tensor:
+        probs = torch.sigmoid(logits)
+        preds = probs > 0.5
+        return preds

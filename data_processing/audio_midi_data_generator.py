@@ -24,13 +24,13 @@ class AudioMidiData:
         max_len = max(m.shape[0] for m in self.mels)
         n_samples = len(self.mels)
         assert(n_samples == len(self.labels))
-        n_mels = self.mels[0].shape[2]
-        n_classes = self.labels[0].shape[2]
+        n_mels = self.mels[0].shape[1] # mels is (samples, time, mels)
+        n_classes = self.labels[0].shape[1] # labels is (samples, time, labels)
 
         X = np.zeros((n_samples, max_len, n_mels), dtype=np.float32)
         Y = np.zeros((n_samples, max_len, n_classes), dtype=np.float32)
 
-        for i in range(self.n_samples):
+        for i in range(n_samples):
             X[i, :self.mels[i].shape[0], :] = self.mels[i]
             Y[i, :self.labels[i].shape[0], :] = self.labels[i]
         
@@ -145,8 +145,8 @@ class AudioMidiDataGenerator:
         return random.choice(self.SOUNDFONTS)
 
     def generate(self, n_samples: int) -> AudioMidiData:
-        mels = []
-        labels = []
+        sample_mels = []
+        sample_labels = []
         for i in tqdm.tqdm(range(n_samples), desc="Generating dataset"):
             pm = self._generate_full_band_midi()
             sf2 = self._select_soundfont()
@@ -156,20 +156,22 @@ class AudioMidiDataGenerator:
             n_frames = mel.shape[0]
             labels = self._midi_to_labels(pm, n_frames)
 
-            mels.append(mel)
-            labels.append(labels)
+            sample_mels.append(mel)
+            sample_labels.append(labels)
 
-        return AudioMidiData(mels, labels)
+        return AudioMidiData(sample_mels, sample_labels)
 
-# === GENERATE DATASET ===
-if __name__ == "__main__":
+def main():
     data_generator = AudioMidiDataGenerator()
-    training_data = data_generator.generate(n_samples=10_000)
+    training_data = data_generator.generate(n_samples=1)
     training_data.save(
-        input_data_path="./data/train2/input_mels.npy", 
-        output_data_path="./data/train2/output_labels.npy")
+        input_data_path="./data/single_sample/input_mels.npy", 
+        output_data_path="./data/single_sample/output_labels.npy")
     
-    evaluation_data = data_generator.generate(n_samples=200)
-    evaluation_data.save(
-        input_data_path="./data/evaluation2/input_mels.npy", 
-        output_data_path="./data/evaluation2/output_labels.npy")
+    # evaluation_data = data_generator.generate(n_samples=200)
+    # evaluation_data.save(
+    #     input_data_path="./data/evaluation2/input_mels.npy", 
+    #     output_data_path="./data/evaluation2/output_labels.npy")
+
+if __name__ == "__main__":
+    main()
