@@ -49,6 +49,8 @@ def main():
     evaluator.evaluate()
 
 if __name__ == "__main__":
-    dataset = AudioMidiDataset(mel_path="./data/single_sample/input_mels.npy", label_path="./data/single_sample/output_labels.npy")
-    evaluator = ModelEvaluator(dataset)
-    evaluator.evaluate()
+    # dataset = AudioMidiDataset(mel_path="./data/single_sample/input_mels.npy", label_path="./data/single_sample/output_labels.npy")
+    # evaluator = ModelEvaluator(dataset)
+    # evaluator.evaluate(model_path="./model/v2/single_sample_model.pt")
+
+    main()

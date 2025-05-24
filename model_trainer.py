@@ -28,7 +28,9 @@ class ModelTrainer:
             lr=ModelTrainer.LR,
             weight_decay=1e-5)
         
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer)
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer,
+            factor=0.8)
 
     def train(self):
         loss_function = torch.nn.BCEWithLogitsLoss()
@@ -45,7 +47,8 @@ class ModelTrainer:
                 total_loss += loss.item()
             
             self.scheduler.step(total_loss)
-            print(f"Epoch {epoch+1}/{ModelTrainer.EPOCHS} | Loss: {total_loss/len(self.dataloader):.4f}")
+            print(f"Epoch {epoch+1}/{ModelTrainer.EPOCHS} | Loss: {total_loss/len(self.dataloader):.8f}")
+            print(self.optimizer.state_dict()['param_groups'][0]['lr'])
 
     def save(self, path: str = DEFAULT_MODEL_PATH):
         torch.save(self.model.state_dict(), path)
@@ -53,7 +56,7 @@ class ModelTrainer:
 
 
 def single_sample_overfitting_for_debug(reload_model: bool = False):
-    model_path = "./model/overfit_single_samplt.pt"
+    model_path = "./model/v2/single_sample_model.pt"
     dataset = AudioMidiDataset(mel_path="./data/single_sample/input_mels.npy", label_path="./data/single_sample/output_labels.npy")
 
     trainer = ModelTrainer(dataset, load_existing_model=reload_model, model_path=model_path)
@@ -67,5 +70,5 @@ def main():
     trainer.save()
 
 if __name__ == "__main__":
-    # main()
-    single_sample_overfitting_for_debug(reload_model = True)
+    main()
+    # single_sample_overfitting_for_debug(reload_model = False)

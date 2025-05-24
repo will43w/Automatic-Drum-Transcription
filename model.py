@@ -2,27 +2,38 @@ import torch
 import torch.nn as nn
 
 class AudioToMidiModel(nn.Module):
-    def __init__(self, n_mels=128, num_classes=10):
+    def __init__(self, n_mels=128, hidden_dim=128, n_classes=10, cnn_channels=64):
         super().__init__()
+
         self.cnn = nn.Sequential(
-            nn.Conv1d(n_mels, 64, kernel_size=3, padding=1),
+            nn.Conv1d(n_mels, cnn_channels, kernel_size=5, padding='same'),
+            nn.BatchNorm1d(cnn_channels),
             nn.ReLU(),
-            nn.BatchNorm1d(64),
-            nn.Conv1d(64, 64, kernel_size=3, padding=1),
+            nn.Conv1d(cnn_channels, cnn_channels, kernel_size=5, padding='same'),
+            nn.BatchNorm1d(cnn_channels),
             nn.ReLU(),
-            nn.BatchNorm1d(64)
         )
-        self.gru = nn.GRU(input_size=64, hidden_size=64, num_layers=1, batch_first=True, bidirectional=True)
-        self.out = nn.Linear(64 * 2, num_classes)
+
+        self.rnn = nn.GRU(
+            input_size=cnn_channels, hidden_size=hidden_dim,
+            num_layers=2, 
+            batch_first=True, 
+            bidirectional=True)
+
+        self.fc = nn.Sequential(
+            nn.Linear(hidden_dim * 2, 128),
+            nn.ReLU(),
+            # nn.Dropout(0.3),
+            nn.Linear(128, n_classes),
+        )
 
     def forward(self, x):
-        # x: (B, T, M) => CNN expects (B, M, T)
-        x = x.transpose(1, 2)
-        x = self.cnn(x)
-        # Back to (B, T, F)
-        x = x.transpose(1, 2)
-        x, _ = self.gru(x)
-        x = self.out(x)
+        # x: (B, T, M) → CNN expects (B, M, T)
+        x = x.permute(0, 2, 1)
+        x = self.cnn(x)           # (B, C, T)
+        x = x.permute(0, 2, 1)    # (B, T, C)
+        x, _ = self.rnn(x)        # (B, T, 2*hidden)
+        x = self.fc(x)            # (B, T, n_classes)
         return x
     
     def logits_to_predictions(logits: torch.Tensor) -> torch.Tensor:
