@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from model import AudioToMidiModel
 from dataset import AudioMidiDataset
+import os
 
 from constants import DEFAULT_MODEL_PATH, DEVICE
 
@@ -48,9 +49,15 @@ class ModelTrainer:
             
             self.scheduler.step(total_loss)
             print(f"Epoch {epoch+1}/{ModelTrainer.EPOCHS} | Loss: {total_loss/len(self.dataloader):.8f}")
-            print(self.optimizer.state_dict()['param_groups'][0]['lr'])
+            print(f"LR: {self.optimizer.state_dict()['param_groups'][0]['lr']:.8f}")
 
     def save(self, path: str = DEFAULT_MODEL_PATH):
+        if not os.path.isdir(os.path.dirname(path)):
+            os.mkdir(os.path.dirname(path))
+
+        if os.path.exists(path):
+            os.remove(path)
+        
         torch.save(self.model.state_dict(), path)
         print("✅ Model saved.")
 
@@ -61,11 +68,12 @@ def single_sample_overfitting_for_debug(reload_model: bool = False):
 
     trainer = ModelTrainer(dataset, load_existing_model=reload_model, model_path=model_path)
     trainer.train()
+
     trainer.save(path=model_path)
 
 def main():
     dataset = AudioMidiDataset.get_training_dataset()
-    trainer = ModelTrainer(dataset)
+    trainer = ModelTrainer(dataset, load_existing_model=True)
     trainer.train()
     trainer.save()
 
