@@ -151,6 +151,11 @@ class AudioMidiDataGenerator:
             pm = self._generate_full_band_midi()
             sf2 = self._select_soundfont()
             audio = self._synthesize_midi(pm, sf2) # audio = synthesize_midi(pm, sf2)
+
+            # output_path = f"./audio_samples/{os.path.basename(sf2)[0:6]}/sample_{i}.mp3"
+            # print(output_path)
+            # save_audio_as_mp3(audio, sample_rate=self.SAMPLE_RATE, output_path=f"../audio_samples/{os.path.basename(sf2)[0:6]}/sample_{i}.mp3")
+
             audio, _ = apply_audio_effects(audio, self.SAMPLE_RATE, mode="mixed")
             mel = self._extract_log_mel(audio)
             n_frames = mel.shape[0]
@@ -163,7 +168,7 @@ class AudioMidiDataGenerator:
 
 def main():
     data_generator = AudioMidiDataGenerator()
-    training_data = data_generator.generate(n_samples=1)
+    training_data = data_generator.generate(n_samples=100)
     training_data.save(
         input_data_path="./data/single_sample/input_mels.npy", 
         output_data_path="./data/single_sample/output_labels.npy")

@@ -11,8 +11,11 @@ from constants import DEFAULT_MODEL_PATH, DEVICE
 class ModelEvaluator:
     BATCH_SIZE = 16
 
-    def __init__(self, dataset: AudioMidiDataset):
-        self.model = AudioToMidiModel().to(DEVICE)
+    def __init__(
+            self, 
+            model: AudioToMidiModel, 
+            dataset: AudioMidiDataset):
+        self.model = model
         self.dataloader = DataLoader(dataset, batch_size=ModelEvaluator.BATCH_SIZE, shuffle=False)
 
     def _evaluate(self) -> Tuple[float, float]:
@@ -39,13 +42,14 @@ class ModelEvaluator:
         return avg_loss, accuracy
     
     def evaluate(self, model_path: str = DEFAULT_MODEL_PATH):
-        self.model.load_state_dict(torch.load(model_path, map_location=DEVICE))
         loss, accuracy = self._evaluate()
         print(f"Validation Loss: {loss:.4f}, Accuracy: {accuracy:.4f}")
     
 def main():
+    model = AudioToMidiModel()
+    model.load()
     dataset = AudioMidiDataset.get_evaluation_dataset()
-    evaluator = ModelEvaluator(dataset)
+    evaluator = ModelEvaluator(model, dataset)
     evaluator.evaluate()
 
 if __name__ == "__main__":

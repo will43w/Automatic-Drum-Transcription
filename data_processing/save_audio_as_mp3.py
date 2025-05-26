@@ -21,4 +21,4 @@ def save_audio_as_mp3(audio: np.ndarray, sample_rate: int, output_path: str):
     # Export to MP3
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     audio_segment.export(output_path, format="mp3")
-    #print(f"Saved MP3 to {output_path}")
+    print(f"Saved MP3 to {output_path}")

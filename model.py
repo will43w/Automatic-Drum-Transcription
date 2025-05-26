@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from constants import DEFAULT_MODEL_PATH, DEVICE
+
 class AudioToMidiModel(nn.Module):
     def __init__(self, n_mels=128, hidden_dim=128, n_classes=10, cnn_channels=64):
         super().__init__()
@@ -27,6 +29,8 @@ class AudioToMidiModel(nn.Module):
             nn.Linear(128, n_classes),
         )
 
+        self.to(DEVICE)
+
     def forward(self, x):
         # x: (B, T, M) → CNN expects (B, M, T)
         x = x.permute(0, 2, 1)
@@ -40,3 +44,6 @@ class AudioToMidiModel(nn.Module):
         probs = torch.sigmoid(logits)
         preds = probs > 0.5
         return preds
+    
+    def load(self, path: str = DEFAULT_MODEL_PATH):
+        self.load_state_dict(torch.load(path, map_location=DEVICE))

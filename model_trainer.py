@@ -15,14 +15,10 @@ class ModelTrainer:
 
     def __init__(
             self, 
-            dataset: AudioMidiDataset,
-            load_existing_model: bool = False, 
-            model_path: str = DEFAULT_MODEL_PATH):
+            model: AudioToMidiModel,
+            dataset: AudioMidiDataset):
         self.dataloader = DataLoader(dataset, batch_size=ModelTrainer.BATCH_SIZE, shuffle=True)
-        self.model = AudioToMidiModel().to(DEVICE)
-
-        if load_existing_model:
-            self.model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+        self.model = model
         
         self.optimizer = optim.Adam(
             self.model.parameters(), 
@@ -72,8 +68,10 @@ def single_sample_overfitting_for_debug(reload_model: bool = False):
     trainer.save(path=model_path)
 
 def main():
+    model = AudioToMidiModel()
+    model.load()
     dataset = AudioMidiDataset.get_training_dataset()
-    trainer = ModelTrainer(dataset, load_existing_model=True)
+    trainer = ModelTrainer(model, dataset, load_existing_model=True)
     trainer.train()
     trainer.save()
 
