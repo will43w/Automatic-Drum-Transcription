@@ -11,6 +11,8 @@ import glob
 from audio_effect_chains import apply_audio_effects
 from save_audio_as_mp3 import save_audio_as_mp3
 
+from constants import MIDI_PITCH_TO_OUTPUT_CLASS, HOP_LENGTH, SAMPLE_RATE, N_MELS
+
 if not hasattr(np, 'complex'):
     np.complex = complex
 
@@ -39,27 +41,10 @@ class AudioMidiData:
         print(f"Saved {len(X)} examples to disk.")
 
 class AudioMidiDataGenerator:
-    SAMPLE_RATE = 22050
-    FRAME_LENGTH_MS = 10
-    HOP_LENGTH = int(SAMPLE_RATE * FRAME_LENGTH_MS / 1000.0)
-    N_MELS = 128
     AUDIO_DURATION = 10
     N_SAMPLES_TRAINING = 100_000
     N_SAMPLES_EVALUATION = 200
     SOUNDFONTS = glob.glob("./data_processing/soundfonts/*.sf2")
-
-    MIDI_PITCH_TO_OUTPUT_CLASS = {
-        36: 0, # Kick
-        38: 1, # Snare
-        42: 2, # Closed Hi Hat
-        44: 3, # Pedal Hi-hat
-        46: 4, # Open Hi Hat
-        49: 5, # Crash
-        57: 5,
-        51: 6, # Ride
-        59: 6, 
-        53: 7, # Ride Bell
-    }
 
     NUM_CLASSES = len(MIDI_PITCH_TO_OUTPUT_CLASS)
 
@@ -82,7 +67,7 @@ class AudioMidiDataGenerator:
         tempo = 40 + random.random() * (240 - 40) # Anywhere from 40 BPM to 240 BPM
         drum = pretty_midi.Instrument(program=0, is_drum=True)
         for t in np.arange(0, duration, tempo / 60 / (3 * 4 * 5)): # Divide each beat up to sixteenth notes in 3, 4, and 5
-            for pitch in self.MIDI_PITCH_TO_OUTPUT_CLASS.keys():
+            for pitch in MIDI_PITCH_TO_OUTPUT_CLASS.keys():
                 random_roll = random.random()
                 if random_roll < 0.05:
                     drum.notes.append(pretty_midi.Note(
@@ -123,10 +108,10 @@ class AudioMidiDataGenerator:
         return pm
 
     def _synthesize_midi(self, pm: pretty_midi.PrettyMIDI, sf2_path: str = None) -> np.ndarray:
-        return pm.fluidsynth(fs=self.SAMPLE_RATE, sf2_path=sf2_path)
+        return pm.fluidsynth(fs=SAMPLE_RATE, sf2_path=sf2_path)
 
     def _extract_log_mel(self, audio: np.ndarray):
-        mel = librosa.feature.melspectrogram(y=audio, sr=self.SAMPLE_RATE, n_mels=self.N_MELS, hop_length=self.HOP_LENGTH)
+        mel = librosa.feature.melspectrogram(y=audio, sr=SAMPLE_RATE, n_mels=N_MELS, hop_length=HOP_LENGTH)
         return librosa.power_to_db(mel).T # (frames, n_mels)
 
     def _midi_to_labels(self, pm: pretty_midi.PrettyMIDI, n_frames: int) -> np.ndarray:
@@ -134,9 +119,9 @@ class AudioMidiDataGenerator:
         for instrument in pm.instruments:
             if instrument.is_drum:
                 for note in instrument.notes:
-                    class_index = self.MIDI_PITCH_TO_OUTPUT_CLASS.get(note.pitch)
+                    class_index = MIDI_PITCH_TO_OUTPUT_CLASS.get(note.pitch)
                     if class_index is not None:
-                        frame_index = int(note.start * self.SAMPLE_RATE / self.HOP_LENGTH)
+                        frame_index = int(note.start * SAMPLE_RATE / HOP_LENGTH)
                         if 0 <= frame_index < n_frames:
                             labels[frame_index, class_index] = 1
         return labels
@@ -154,9 +139,9 @@ class AudioMidiDataGenerator:
 
             # output_path = f"./audio_samples/{os.path.basename(sf2)[0:6]}/sample_{i}.mp3"
             # print(output_path)
-            # save_audio_as_mp3(audio, sample_rate=self.SAMPLE_RATE, output_path=f"../audio_samples/{os.path.basename(sf2)[0:6]}/sample_{i}.mp3")
+            # save_audio_as_mp3(audio, sample_rate=SAMPLE_RATE, output_path=f"../audio_samples/{os.path.basename(sf2)[0:6]}/sample_{i}.mp3")
 
-            audio, _ = apply_audio_effects(audio, self.SAMPLE_RATE, mode="mixed")
+            audio, _ = apply_audio_effects(audio, SAMPLE_RATE, mode="mixed")
             mel = self._extract_log_mel(audio)
             n_frames = mel.shape[0]
             labels = self._midi_to_labels(pm, n_frames)

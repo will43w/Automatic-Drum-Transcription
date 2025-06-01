@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 
-from constants import DEFAULT_MODEL_PATH, DEVICE
+from constants import DEFAULT_MODEL_PATH, DEVICE, N_MELS
 
 class AudioToMidiModel(nn.Module):
-    def __init__(self, n_mels=128, hidden_dim=128, n_classes=10, cnn_channels=64):
+    def __init__(self, n_mels=N_MELS, hidden_dim=128, n_classes=10, cnn_channels=64):
         super().__init__()
 
         self.cnn = nn.Sequential(
