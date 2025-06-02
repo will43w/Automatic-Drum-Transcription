@@ -4,7 +4,7 @@ import pretty_midi
 import librosa
 
 from model import AudioToMidiModel
-from constants import SAMPLE_RATE, N_MELS, OUTPUT_CLASS_TO_MIDI_PITCH, HOP_LENGTH
+from constants import SAMPLE_RATE, N_MELS, OUTPUT_CLASS_TO_MIDI_PITCH, HOP_SECONDS
 
 class AudioToMidiConverter:
     THRESHOLD = 0.5
@@ -39,9 +39,9 @@ class AudioToMidiConverter:
         T, C = predictions.shape
 
         for t in range(T):
-            time_sec = t * HOP_LENGTH
+            time_sec = t * HOP_SECONDS
             for c in range(C):
-                if predictions[t, c] > self.THRESHOLD:
+                if predictions[t, c]:
                     pitch = OUTPUT_CLASS_TO_MIDI_PITCH.get(c)
                     if pitch is not None:
                         note = pretty_midi.Note(
