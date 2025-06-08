@@ -12,6 +12,7 @@ from audio_effect_chains import apply_audio_effects
 from save_audio_as_mp3 import save_audio_as_mp3
 
 from constants import MIDI_PITCH_TO_OUTPUT_CLASS, HOP_LENGTH, SAMPLE_RATE, N_MELS
+from data_transformer import DataTransformer
 
 if not hasattr(np, 'complex'):
     np.complex = complex
@@ -111,20 +112,10 @@ class AudioMidiDataGenerator:
         return pm.fluidsynth(fs=SAMPLE_RATE, sf2_path=sf2_path)
 
     def _extract_log_mel(self, audio: np.ndarray):
-        mel = librosa.feature.melspectrogram(y=audio, sr=SAMPLE_RATE, n_mels=N_MELS, hop_length=HOP_LENGTH)
-        return librosa.power_to_db(mel).T # (frames, n_mels)
+        return DataTransformer.AudioToMels(audio)
 
     def _midi_to_labels(self, pm: pretty_midi.PrettyMIDI, n_frames: int) -> np.ndarray:
-        labels = np.zeros((n_frames, self.NUM_CLASSES), dtype=np.float32)
-        for instrument in pm.instruments:
-            if instrument.is_drum:
-                for note in instrument.notes:
-                    class_index = MIDI_PITCH_TO_OUTPUT_CLASS.get(note.pitch)
-                    if class_index is not None:
-                        frame_index = int(note.start * SAMPLE_RATE / HOP_LENGTH)
-                        if 0 <= frame_index < n_frames:
-                            labels[frame_index, class_index] = 1
-        return labels
+        return DataTransformer.MidiToLabels(pm, n_frames)
     
     def _select_soundfont(self) -> str:
         return random.choice(self.SOUNDFONTS)
