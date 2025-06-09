@@ -6,7 +6,7 @@ import librosa
 from constants import MIDI_PITCH_TO_OUTPUT_CLASS, OUTPUT_CLASS_TO_MIDI_PITCH, SAMPLE_RATE, HOP_LENGTH, HOP_SECONDS, N_MELS
 
 class DataTransformer:
-    def MidiToLabels(midi: pretty_midi.PrettyMIDI, n_frames: int) -> np.ndarray:
+    def midi_to_labels(midi: pretty_midi.PrettyMIDI, n_frames: int) -> np.ndarray:
         labels = np.zeros((n_frames, len(MIDI_PITCH_TO_OUTPUT_CLASS)), dtype=np.float32)
         for instrument in midi.instruments:
             if instrument.is_drum:
@@ -18,7 +18,7 @@ class DataTransformer:
                             labels[frame_index, class_index] = 1
         return labels
     
-    def LabelsToMidi(predictions: torch.Tensor) -> pretty_midi.PrettyMIDI:
+    def labels_to_midi(predictions: torch.Tensor) -> pretty_midi.PrettyMIDI:
         midi = pretty_midi.PrettyMIDI()
         drum_track = pretty_midi.Instrument(program=0, is_drum=True)
 
@@ -41,11 +41,11 @@ class DataTransformer:
         midi.instruments.append(drum_track)
         return midi
     
-    def AudioToMels(audio: np.ndarray) -> np.ndarray:
+    def audio_to_mels(audio: np.ndarray) -> np.ndarray:
         mel = librosa.feature.melspectrogram(y=audio, sr=SAMPLE_RATE, n_mels=N_MELS, hop_length=HOP_LENGTH)
         return librosa.power_to_db(mel).T # (frames, n_mels)
     
-    def CombineAudio(audio: np.ndarray, other_audio: np.ndarray, snr_db: float = 0.0) -> np.ndarray:
+    def combine_audio(audio: np.ndarray, other_audio: np.ndarray, snr_db: float = 0.0) -> np.ndarray:
         # Trim to shortest
         min_len = min(len(audio), len(other_audio))
         audio = audio[:min_len]
@@ -58,6 +58,7 @@ class DataTransformer:
         drum_rms = rms(audio)
         non_drum_rms = rms(other_audio)
 
+        # Positive SNR → drums louder; negative SNR → non-drums louder.
         desired_ratio = 10 ** (snr_db / 20.0)  # linear SNR
 
         # Scale other to get desired SNR

@@ -20,7 +20,7 @@ class AudioToMidiConverter:
         if audio_sample_rate != SAMPLE_RATE:
             audio = librosa.resample(audio, orig_sr=audio_sample_rate, target_sr=SAMPLE_RATE)
 
-        mels = DataTransformer.AudioToMels(audio)
+        mels = DataTransformer.audio_to_mels(audio)
         return torch.tensor(mels).unsqueeze(0).float()
 
     def _predict(self, mel: torch.Tensor) -> torch.Tensor:
@@ -29,7 +29,7 @@ class AudioToMidiConverter:
         return AudioToMidiModel.logits_to_predictions(logits).squeeze(0) # (T, n_classes), squeeze out batch dimension for inference
 
     def _predictions_to_midi(self, predictions: torch.Tensor) -> pretty_midi.PrettyMIDI:
-        return DataTransformer.LabelsToMidi(predictions)
+        return DataTransformer.labels_to_midi(predictions)
 
     def convert(self, audio: np.ndarray, audio_sample_rate: int) -> pretty_midi.PrettyMIDI:
         mel = self._audio_to_mel(audio, audio_sample_rate)
