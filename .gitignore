@@ -1,5 +1,5 @@
 /venv
-/__pycache__
+**/__pycache__/
 
 /data/*
 
@@ -7,5 +7,3 @@
 /data_processing/soundfonts/*
 
 /audio_samples
-
-/model/*
